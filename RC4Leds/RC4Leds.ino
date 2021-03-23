@@ -1,13 +1,25 @@
 /*
-	Name:       TestMetRC.ino
-	Created:	22-3-2021 9:22:44
-	Author:     Rob Antonisse
+ Name:		RC4Leds.ino
+ Created:	3/22/2021 9:32:03 PM
+ Author:	rob antonisse
 
-	Testen met rc gebruik makend van een NRF24L01 mini smd
+ Test met NRF24L01 mini smd 
+ Doelstelling: snappen hoe het werkt.
+
+ TX node voorzien van 4 drukknoppen
+ RX node voorzien van 4 leds.
+
+ 4 bytes versturen. 1=true 0=false
+
+ RX leds op pinnen 7,6,5,4
+ TX switches op A0,A1,A2,A3
+ 2 versies maken of alles in een combineren??
+
+
+ Deze versie alleen ontvangen dus RX.... en de naam
 
 
 */
-
 
 #include <SPI.h>
 #include <RF24_config.h>
@@ -25,22 +37,7 @@ RF24 radio(8, 10); //nieuwe pinnen, constructor class RF24
 
 // Let these addresses be used for the pair
 uint8_t address[][6] = { "1Node", "2Node" };
-/*
-bovenstaand is een nested array. De eerste 2 haakjes declareren een array maar niet hoe groot,
-de tweede haakje geven aan 6 bytes per eerste array, tussen de acculades worden dan de waardes gegeven en 
-daarmee de grootte van de eerste array ook gedeclareerd. Hier gebruiken ze letters die later als aparte bytes worden gelezen, 
-zo te zien zijn miljarden verschillende addressen dus mogelijk. 
-
-*/
-
-
-
-
-// It is very helpful to think of an address as a path instead of as
-// an identifying device destination
-// to use different addresses on a pair of radios, we need a variable to
-// uniquely identify which address this radio will use to transmit
-
+//uint8_t address[][6] = { "Rober", "Jopie" };
 byte radioNumber = true; // 0 uses address[0] to transmit, 1 uses address[1] to transmit
 //**hier werd gebruikt bool radionumber =1 , veranderd in byte, is gewoon een boolean met waarde true
 
@@ -54,13 +51,25 @@ bool role = false;  // true = TX role, false = RX role
 // on every successful transmission
 float payload = 0.0;
 
-void setup() {
+//declarations RC4leds
+byte ledstatus=0;
+unsigned long ledtimer;
+
+
+
+void setup() {	
+	
 	//Serial.begin(115200);
 	Serial.begin(9600);
 
 	while (!Serial) {
 		// some boards need to wait to ensure access to serial over USB
 	}
+
+	//RC4leds
+	//ports
+	DDRD |= (240<<0); //set pins 7,6,5,4 as outputs
+
 
 	// initialize the transceiver on the SPI bus
 	//****radio.begin start de boel op en returns een true als gelukt. 
@@ -76,13 +85,15 @@ void setup() {
 	Serial.println(F("Jo!... Ik ga aan de gang"));
 
 	// To set the radioNumber via the Serial monitor on startup
-	Serial.println(F("Which radio is this? Enter '0' or '1'. Defaults to '0'"));
-	while (!Serial.available()) {
-		// wait for user input// oneindigelus, gaat dus niet automatisch verder input vereist
-	}
-	char input = Serial.parseInt();
 
-	radioNumber = input == 1;
+	//Serial.println(F("Which radio is this? Enter '0' or '1'. Defaults to '0'"));
+	//while (!Serial.available()) {
+		// wait for user input// oneindigelus, gaat dus niet automatisch verder input vereist
+	//}
+
+	//char input = Serial.parseInt();
+
+	//radioNumber = input == 1;
 
 	//***hier wordt de serial monitor schoongeveegd? Waarom.... ?
 
@@ -96,7 +107,7 @@ void setup() {
 
 
 	//*****dit is alleen een mededeling, omschakelen en lezen van serial gebeurt in de loop
-	Serial.println(F("*** PRESS 'T' to begin transmitting to the other node"));
+	//Serial.println(F("*** PRESS 'T' to begin transmitting to the other node"));
 
 
 	// Set the PA Level low to try preventing power supply related problems
@@ -109,8 +120,6 @@ void setup() {
 	radio.setPayloadSize(sizeof(payload)); // float datatype occupies 4 bytes
 	//***Hiermee geef je aan hoeveel bytes moeten worden verzonden
 	//Niks invullen geeft 32 bytes, hmmm top!
-
-
 
 	/* ***********************************************************************
 	Hier worden de adressen van de TX en RX bepaald, nu 22mrt nog beetje vaag voor me
@@ -127,12 +136,9 @@ void setup() {
 	// additional setup specific to the node's role
 	//***role is boolean gedefinieerd als false, dus hier wordt de RX van een module automatisch bij powerup
 	//** gestart
-	if (role) {
-		radio.stopListening();  // put radio in TX mode
-	}
-	else {
+
 		radio.startListening(); // put radio in RX mode
-	}
+
 
 
 	// For debugging info
@@ -148,38 +154,15 @@ void setup() {
 
 void loop() {
 
-	if (role) {
-		// This device is a TX node
-		//**role is alleen maar nodig voor deze If functie kan in de loop worden aangepast
-
-
-
-		unsigned long start_timer = micros();                    // start the timer
-		bool report = radio.write(&payload, sizeof(float));      // transmit & save the report
-		//**als RX ontvangst van de payload geeft is report true
-
-
-		unsigned long end_timer = micros();                      // end the timer
-
-		if (report) { //**dus als report is true alles ok
-			Serial.print(F("Transmission successful! "));          // payload was delivered
-			Serial.print(F("Time to transmit = "));
-			Serial.print(end_timer - start_timer);                 // print the timer result
-			Serial.print(F(" us. Sent: "));
-			Serial.println(payload);                               // print payload sent
-			payload += 0.01;                                       // increment float payload
-		}
-		else {
-			Serial.println(F("Transmission failed or timed out")); // payload was not delivered
-		}
-
-		// to make this example readable in the serial monitor
-		delay(1000);  // slow transmissions down by 1 second
-		//**Anders raced het scherm in een keer vol...
-
-	}
-	else {
-		// This device is a RX node
+	if (millis() - ledtimer > 1000) { //looplichie
+		
+		ledtimer = millis();
+	if (ledstatus == 0) ledstatus = 128;
+	showleds();
+//Serial.println(ledstatus);
+	ledstatus = (ledstatus >> 1);
+	}		
+	// This device is a RX node
 
 		uint8_t pipe;
 		if (radio.available(&pipe)) {             // is there a payload? get the pipe number that recieved it
@@ -187,7 +170,7 @@ void loop() {
 			radio.available(&pipe)  returns a true als er iets ontvangen is, en de variabele pipe het pipe nummer,
 			Van de ontvanger
 			*/
-					   
+
 			uint8_t bytes = radio.getPayloadSize(); // get the size of the payload
 			radio.read(&payload, bytes);            // fetch payload from FIFO
 			Serial.print(F("Received "));
@@ -197,30 +180,19 @@ void loop() {
 			Serial.print(F(": "));
 			Serial.println(payload);                // print the payload's value
 		}
-	} // role
-
-	if (Serial.available()) {
-		// change the role via the serial monitor
-		//******zit in de loop, dus in runtime is de functie TX/RX te wisselen....
-
-		char c = toupper(Serial.read());
-		//Function toupper() takes a single argument in the integer form and returns a value of type int.
-
-		if (c == 'T' && !role) { //**getiepte letter een t and role=false
-			// Become the TX node
-
-			role = true;
-			Serial.println(F("*** CHANGING TO TRANSMIT ROLE -- PRESS 'R' TO SWITCH BACK"));
-			radio.stopListening();
-
-		}
-		else if (c == 'R' && role) { //**hier dus role true
-			// Become the RX node
-
-			role = false;
-			Serial.println(F("*** CHANGING TO RECEIVE ROLE -- PRESS 'T' TO SWITCH BACK"));
-			radio.startListening();
-		}
-	}
 
 } // loop
+
+void showleds() {
+
+	for (byte i = 7; i > 3; i--) {
+		//PORTD &=~(120 << 0); //leds off
+
+		if (ledstatus & (1 << i)) {
+			PORTD |= (1 << i);
+		}
+		else {
+			PORTD &= ~(1 << i);
+		}
+	}
+}
