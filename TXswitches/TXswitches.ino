@@ -23,14 +23,20 @@ RF24 radio(8, 10); //Constructor class RF24
 
 
 // Let these addresses be used for the pair
-uint8_t address[][6] = { "1Node", "2Node" }; //origineel
-//5 bytes wat je invoert maakt geen ruk uit als maar 5 bytes en TX en RX moeten beide adressen goed hebben
-//Kan zeker ook in loop worden ingevoerd, hoeft niet als constante
+//uint8_t address[][6] = { "1Node", "2Node" }; //origineel
+byte address[][6] = { "TXDCC","RD000" }; //5 bytes adres, char worden omgezet in nummer
+/*
+TXDCC=(decimaal) 84-88-68-67-67-0 (laatste byte blijft 0)
+RD000= 82-68-48-48-48 merk op 0 = dus 48 B0110 0000
+5 bytes wat je invoert maakt geen ruk uit als maar 5 bytes en TX en RX moeten beide adressen goed hebben, immers de RX moet weten waar de aknowlidge
+Kan zeker ook in loop worden ingevoerd, hoeft niet als constante
 
+*/
 
 byte radioNumber; // Indentificatie van de node?
 float payload = 0.0;
-byte TX_data[4];
+byte TX_data[4]; //Wordt naar verwezen met een pointer &TX_data in de RF24 class
+
 unsigned long testtimer;
 unsigned long SW_timer;
 byte SW_status; // = 0xFF; //switches zijn low-active
@@ -55,7 +61,7 @@ void setup() {
 	Serial.print(F("radioNumber = "));
 	Serial.println((int)radioNumber);
 
-	/*
+	
 	Serial.print("adres node 0: ");
 	for (byte i = 0; i < 6; i++) {
 		Serial.print("-");
@@ -69,10 +75,16 @@ void setup() {
 		Serial.print(address[1][i]);
 	}
 	Serial.println("");
-*/
+
 
 	radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default. **Sterkte van de zender PA_MIN is de laagste)
-	radio.setPayloadSize(sizeof(payload)); // float datatype occupies 4 bytes
+
+	//radio.setPayloadSize(sizeof(payload)); // float datatype occupies 4 bytes
+	//** Dit is belangrijk, bepaalt het ,ax aantal bytes wat kan worden gezonden.
+	//**Als je hier niks op geeft worden er altijd 32 bytes verzonden, dit geeft natuurlijk een tijdverlies
+	//**dus voor deze sketch:
+	radio.setPayloadSize(4); 
+	
 	radio.openWritingPipe(address[radioNumber]);     // hier worden de adressen gekoppeld aan de beide pijpjes,0=TX
 	//radio.openReadingPipe(1, address[!radioNumber]); // using pipe 1, RX ? niet nodig in de TX versie
 	radio.stopListening();  // put radio in TX mode, doet het ook zonder deze regel nog ff uitzoeken wat dit is.
@@ -83,11 +95,12 @@ void setup() {
 
 void loop() {
 	//altijd TX 
-	if (millis() - testtimer > 5000) {
-		testtimer = millis();
-		sendtest();
-	}
-	if (millis() - SW_timer > 20) {
+	//if (millis() - testtimer > 5000) {
+	//	testtimer = millis();
+	//	sendtest();
+	//}
+
+	if (millis() - SW_timer > 50) {
 		SW_timer = millis();
 		SW_exe();
 	}
@@ -98,6 +111,7 @@ void loop() {
 void SW_exe() {
 	byte css = PINC;
 	byte changed = css ^ SW_status;
+
 	if (changed > 0) {
 		Serial.print("TX_data : ");
 		for (byte i = 0; i < 4; i++) {
@@ -113,6 +127,7 @@ void SW_exe() {
 			Serial.print(TX_data[i]); Serial.print(" ");
 		}
 		Serial.println("");
+		TX_exe();
 	}
 	SW_status = css;
 }
@@ -135,6 +150,17 @@ void sendtest() {
 	}
 	else {
 		Serial.println(F("Transmission failed or timed out")); // payload was not delivered
+	}
+
+}
+void TX_exe() {
+	//makes tx
+	bool report = radio.write(&TX_data, 4);
+	if (report) {
+		Serial.print(" Ok!");
+	}
+	else {
+		Serial.println("helaas.....niet gelukt");
 	}
 
 }

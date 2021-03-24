@@ -36,8 +36,10 @@ RF24 radio(8, 10); //nieuwe pinnen, constructor class RF24
 
 
 // Let these addresses be used for the pair
-uint8_t address[][6] = { "1Node", "2Node" };
+//uint8_t address[][6] = { "1Node", "2Node" };
 //uint8_t address[][6] = { "Rober", "Jopie" };
+byte address[][6] = { "TXDCC","RD000" };
+
 byte radioNumber = true; // 0 uses address[0] to transmit, 1 uses address[1] to transmit
 //**hier werd gebruikt bool radionumber =1 , veranderd in byte, is gewoon een boolean met waarde true
 
@@ -50,8 +52,15 @@ bool role = false;  // true = TX role, false = RX role
 // a single float number that will be incremented
 // on every successful transmission
 float payload = 0.0;
-
+/*
+Payload is willekeurig gekozen array.
+De class gebruikt de pointer naar deze array. dus &payload of &robbiesdata.....
+Voor zenden wordt daar de data gehaald, write bij lezen read wordt de data daar geplaatst. Verwarrend is dezelfde naam....
+in deze exaple, maar dat is omdat ze TX en RX in 1 sketch hebben gestopt. 
+Dus we gaan werken met TX_data en RX_data 
+*/
 //declarations RC4leds
+byte RX_data[4]; //array pointer ernaar wordt telkens gebruikt dus &RX_data
 byte ledstatus=0;
 unsigned long ledtimer;
 
@@ -117,9 +126,7 @@ void setup() {
 
 	// save on transmission time by setting the radio to only transmit the
 	// number of bytes we need to transmit a float
-	radio.setPayloadSize(sizeof(payload)); // float datatype occupies 4 bytes
-	//***Hiermee geef je aan hoeveel bytes moeten worden verzonden
-	//Niks invullen geeft 32 bytes, hmmm top!
+	radio.setPayloadSize(4); //max te ontvangen bytes
 
 	/* ***********************************************************************
 	Hier worden de adressen van de TX en RX bepaald, nu 22mrt nog beetje vaag voor me
@@ -128,7 +135,7 @@ void setup() {
 	*/
 
 	// set the TX address of the RX node into the TX pipe
-	radio.openWritingPipe(address[radioNumber]);     // always uses pipe 0
+	//radio.openWritingPipe(address[radioNumber]);     // always uses pipe 0
 
 	// set the RX address of the TX node into a RX pipe
 	radio.openReadingPipe(1, address[!radioNumber]); // using pipe 1
@@ -154,31 +161,36 @@ void setup() {
 
 void loop() {
 
-	if (millis() - ledtimer > 1000) { //looplichie
-		
+	/*
+	if (millis() - ledtimer > 1000) { //looplichie		
 		ledtimer = millis();
 	if (ledstatus == 0) ledstatus = 128;
 	showleds();
 //Serial.println(ledstatus);
 	ledstatus = (ledstatus >> 1);
 	}		
+*/
 	// This device is a RX node
-
 		uint8_t pipe;
-		if (radio.available(&pipe)) {             // is there a payload? get the pipe number that recieved it
+		if (radio.available(&pipe)) {// is there a payload? get the pipe number that recieved it
 			/*
+			Merk op wordt iedere loop gedaan.... dus heel snel proces
 			radio.available(&pipe)  returns a true als er iets ontvangen is, en de variabele pipe het pipe nummer,
 			Van de ontvanger
 			*/
+			//uint8_t bytes = radio.getPayloadSize(); // get the size of the payload
 
-			uint8_t bytes = radio.getPayloadSize(); // get the size of the payload
-			radio.read(&payload, bytes);            // fetch payload from FIFO
-			Serial.print(F("Received "));
-			Serial.print(bytes);                    // print the size of the payload
-			Serial.print(F(" bytes on pipe "));
-			Serial.print(pipe);                     // print the pipe number
-			Serial.print(F(": "));
-			Serial.println(payload);                // print the payload's value
+			//radio.read(&payload, 4);            // fetch payload from FIFO
+			radio.read(&RX_data, 4);
+			Serial.print("Ontvangen: ");
+			ledstatus = 0;
+			for (byte i = 0; i < 4; i++) {
+				if (RX_data[i] > 0)ledstatus |= (1 << (7-i)); //leds zitten voor de test op d7,d6,d5,d4
+				Serial.print(RX_data[i]);
+				Serial.print(" ");
+			}
+			Serial.println("");
+			showleds();
 		}
 
 } // loop
