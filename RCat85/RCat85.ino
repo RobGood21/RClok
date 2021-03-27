@@ -18,7 +18,10 @@
 //#include <nRF24L01.h>
 
 RF24 radio(10,4); //nieuwe pinnen, CE CSN, constructor class RF24 
-byte address[][6] = { "TXDCC","RD000" };
+//byte address[][6] = { "TXDCC","RD000" }; //is adres is van de TX 2e wordt niet gebruikt nodig als er moet worden geantwoord
+
+byte testadres[6] = { "TXDCC" }; //dit werkt ook
+
 byte RX_data[4]; //array pointer ernaar wordt telkens gebruikt dus &RX_data
 byte SFT_data=0x0;
 unsigned long ledtimer;
@@ -30,9 +33,12 @@ DDRB |= (1 << 3);
 PORTB &= ~(1 << 3);
 
 	radio.begin();
+	radio.setChannel(50);
 	radio.setPALevel(RF24_PA_LOW);
 	radio.setPayloadSize(4); //max te ontvangen bytes
-	radio.openReadingPipe(1, address[0]); // using pipe 1, adress 0 (TX adres hoop ik....)	
+	//radio.openReadingPipe(1, address[0]); // using pipe 1, adress 0 (TX adres hoop ik....)	
+	radio.openReadingPipe(1, testadres);
+
 	radio.startListening(); // put radio in RX mode
 	//radio.setAutoAck(true);
 	SFT_spi();

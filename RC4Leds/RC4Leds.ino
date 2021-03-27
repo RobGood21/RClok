@@ -3,7 +3,7 @@
  Created:	3/22/2021 9:32:03 PM
  Author:	rob antonisse
 
- Test met NRF24L01 mini smd 
+ Test met NRF24L01 mini smd
  Doelstelling: snappen hoe het werkt.
 
  TX node voorzien van 4 drukknoppen
@@ -45,28 +45,13 @@ byte radioNumber = true; // 0 uses address[0] to transmit, 1 uses address[1] to 
 
 // Used to control whether this node is sending or receiving
 bool role = false;  // true = TX role, false = RX role
-//***ook weereen boolean waarde false
-
-
-// For this example, we'll be using a payload containing
-// a single float number that will be incremented
-// on every successful transmission
-//float payload = 0.0;
-/*
-Payload is willekeurig gekozen array.
-De class gebruikt de pointer naar deze array. dus &payload of &robbiesdata.....
-Voor zenden wordt daar de data gehaald, write bij lezen read wordt de data daar geplaatst. Verwarrend is dezelfde naam....
-in deze exaple, maar dat is omdat ze TX en RX in 1 sketch hebben gestopt. 
-Dus we gaan werken met TX_data en RX_data 
-*/
-
 //declarations RC4leds
 byte RX_data[4]; //array pointer ernaar wordt telkens gebruikt dus &RX_data
-byte ledstatus=0;
+byte ledstatus = 0;
 unsigned long ledtimer;
 
-void setup() {	
-	
+void setup() {
+
 	//Serial.begin(115200);
 	Serial.begin(9600);
 
@@ -76,12 +61,14 @@ void setup() {
 
 	//RC4leds
 	//ports
-	DDRD |= (240<<0); //set pins 7,6,5,4 as outputs
+	DDRD |= (240 << 0); //set pins 7,6,5,4 as outputs
 	//****radio.begin start de boel op en returns een true als gelukt. 
 	if (!radio.begin()) {
 		Serial.println(F("radio hardware is not responding!!"));
 		while (1) {} // hold in infinite loop
 	}
+	radio.setChannel(50); //tx channel
+
 	Serial.println(F("Jo!... Ik ga aan de gang"));
 	Serial.print(F("radioNumber = "));
 	Serial.println((int)radioNumber);
@@ -94,29 +81,26 @@ void setup() {
 	// because these examples are likely run with nodes in close proximity to
 	// each other.
 	radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default. **Sterkte van de zender PA_MIN is de laagste)
-
-	// save on transmission time by setting the radio to only transmit the
-	// number of bytes we need to transmit a float
 	radio.setPayloadSize(4); //max te ontvangen bytes	
 	radio.openReadingPipe(1, address[0]); // using pipe 1, adress 0 (adres van de TX)
-		radio.startListening(); // put radio in RX mode
+	radio.startListening(); // put radio in RX mode
 } // setup
 void loop() {
 	// This device is a RX node
-		uint8_t pipe;
-		if (radio.available(&pipe)) {// is there a payload? get the pipe number that recieved it
-			radio.read(&RX_data, 4);
+	uint8_t pipe;
+	if (radio.available(&pipe)) {// is there a payload? get the pipe number that recieved it
+		radio.read(&RX_data, 4);
 
-			Serial.print("Ontvangen: ");
-			ledstatus = 0;
-			for (byte i = 0; i < 4; i++) {
-				if (RX_data[i] > 0)ledstatus |= (1 << (7-i)); //leds zitten voor de test op d7,d6,d5,d4
-				Serial.print(RX_data[i]);
-				Serial.print(" ");
-			}
-			Serial.println("");
-			showleds();
+		Serial.print("Ontvangen: ");
+		ledstatus = 0;
+		for (byte i = 0; i < 4; i++) {
+			if (RX_data[i] > 0)ledstatus |= (1 << (7 - i)); //leds zitten voor de test op d7,d6,d5,d4
+			Serial.print(RX_data[i]);
+			Serial.print(" ");
 		}
+		Serial.println("");
+		showleds();
+	}
 
 } // loop
 

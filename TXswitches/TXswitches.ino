@@ -24,7 +24,9 @@ RF24 radio(8, 10); //Constructor class RF24
 
 // Let these addresses be used for the pair
 //uint8_t address[][6] = { "1Node", "2Node" }; //origineel
-byte address[][6] = { "TXDCC","RD000" }; //5 bytes adres, char worden omgezet in nummer
+//byte address[][6] = { "TXDCC","RD000" }; //5 bytes adres, char worden omgezet in nummer
+byte testadress[6] = { "TXDCC" };
+
 /*
 TXDCC=(decimaal) 84-88-68-67-67-0 (laatste byte blijft 0)
 RD000= 82-68-48-48-48 merk op 0 = dus 48 B0110 0000
@@ -56,12 +58,13 @@ void setup() {
 		while (1) {} // hold in infinite loop
 	}
 	Serial.println(F("Jo!... ik ben de TX zender"));
-	radioNumber = 0; //indentificatie nummer????
 
+	radio.setChannel(50); //set transmit frequency basic freq+ bandwidth/125 * channel 
+	radioNumber = 0; //indentificatie nummer????
 	Serial.print(F("radioNumber = "));
 	Serial.println((int)radioNumber);
 
-	
+	/*
 	Serial.print("adres node 0: ");
 	for (byte i = 0; i < 6; i++) {
 		Serial.print("-");
@@ -75,7 +78,7 @@ void setup() {
 		Serial.print(address[1][i]);
 	}
 	Serial.println("");
-
+	*/
 
 	radio.setPALevel(RF24_PA_LOW);  // RF24_PA_MAX is default. **Sterkte van de zender PA_MIN is de laagste)
 
@@ -83,10 +86,10 @@ void setup() {
 	//** Dit is belangrijk, bepaalt het ,ax aantal bytes wat kan worden gezonden.
 	//**Als je hier niks op geeft worden er altijd 32 bytes verzonden, dit geeft natuurlijk een tijdverlies
 	//**dus voor deze sketch:
-	radio.setPayloadSize(4); 
-	
-	radio.openWritingPipe(address[radioNumber]);     // hier worden de adressen gekoppeld aan de beide pijpjes,0=TX
-	//radio.openReadingPipe(1, address[!radioNumber]); // using pipe 1, RX ? niet nodig in de TX versie
+	radio.setPayloadSize(4); 	
+	//radio.openWritingPipe(address[radioNumber]); 
+	radio.openWritingPipe(testadress);  
+
 	radio.stopListening();  // put radio in TX mode, doet het ook zonder deze regel nog ff uitzoeken wat dit is.
 
 	SW_status = PINC; //zorgt ervoor dat er geen eerste switch event is by powerup
