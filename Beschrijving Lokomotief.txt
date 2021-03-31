@@ -1,0 +1,10 @@
+Beschrijving van Lokomotief
+
+
+GPIOR0
+bit0 ISR bit
+
+
+Shift_byte
+bit0 Motor R
+bit1 Motor L
